@@ -1,6 +1,6 @@
 require "playlist/puller/version"
 
-module Playlist
+class Playlist
   module Puller
     class Error < StandardError; end
     # Your code goes here...

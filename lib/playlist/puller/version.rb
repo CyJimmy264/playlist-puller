@@ -1,4 +1,4 @@
-module Playlist
+class Playlist
   module Puller
     VERSION = "0.1.0"
   end

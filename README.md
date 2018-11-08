@@ -1,8 +1,8 @@
 # Playlist::Puller
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/playlist/puller`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+The gem `playlist-puller` is a library and a CLI tool for pulling remote music
+files from a playlist (M3U, XSPF, a simple human readable format) to a
+destination directory.
 
 ## Installation
 
@@ -22,7 +22,26 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+The library based on the `playlist` gem. So let's assume that you have just been
+parsed a playlist with some tracks like this:
+
+```rb
+File.open("playlist.m3u") do |file|
+  playlist = Playlist::Format::M3U.parse(file)
+  puts "The playlist contains #{playlist.tracks.count} tracks"
+end
+```
+
+Having this we could do something like that:
+
+```ruby
+puller = Playlist::Puller.new(playlist)
+
+# it automatically generates a list with all tracks from original playlist
+puller.list.first #=> 
+
+```
+
 
 ## Development
 
@@ -32,7 +51,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/playlist-puller.
+Bug reports and pull requests are welcome on GitHub at https://github.com/CyJimmy264/playlist-puller.
 
 ## License
 

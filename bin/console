@@ -1,14 +1,22 @@
 #!/usr/bin/env ruby
 
 require "bundler/setup"
+
+require 'playlist'
 require "playlist/puller"
 
 # You can add fixtures and/or initialization code here to make experimenting
 # with your gem easier. You can also use a different console, if you like.
 
 # (If you use this, don't forget to add pry to your Gemfile!)
-# require "pry"
-# Pry.start
+# require "irb"
+# IRB.start(__FILE__)
 
-require "irb"
-IRB.start(__FILE__)
+require "pry"
+
+playlist = nil
+File.open("tmp/playlist.m3u") do |file|
+  playlist = Playlist::Format::M3U.parse(file)
+end
+
+Pry.start
