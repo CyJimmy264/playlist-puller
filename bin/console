@@ -2,6 +2,7 @@
 
 require "bundler/setup"
 
+require 'active_support/all'
 require 'playlist'
 require 'playlist/puller'
 require 'down'
@@ -16,30 +17,49 @@ require 'ruby-progressbar'
 
 require "pry"
 
-DEST = "/run/media/mveynberg/home/mveynberg/Музыка/VK"
+DEST = "/home/mveynberg/Музыка/VK"
 
 playlist = nil
-File.open("tmp/playlist.m3u") do |file|
+File.open(Dir["/home/mveynberg/Музыка/Музыка\ Максима\ Вейнберга*"].sort.last) do |file|
   playlist = Playlist::Format::M3U.parse(file)
 end
 
 vk_playlist = Playlist.new title: "VK"
 
 def sanitize(str)
-  str.gsub(/[\%\/\-]/) { |c| '%%%02X' % c.ord }
+  str.gsub(/[\%\/\-]/) { |c| '%%%02X' % c.ord }.truncate(100, separator: /\s/)
+end
+
+tracks_hash = {}
+
+def suffix_num_str(suffix_num)
+  suffix_num ? " (#{suffix_num})" : ""
+end
+
+def track_name(artist, title, suffix_num)
+  "#{artist} - #{title}#{suffix_num_str(suffix_num)}"
+end
+
+def track_filename(artist, title, suffix_num)
+  "#{track_name(artist, title, suffix_num)}.mp3"
 end
 
 playlist.tracks.each do |track|
   title = sanitize track.title
   artist = sanitize track.contributor_names
+  suffix_num = nil
 
-  track_name = "#{artist} - #{title}"
-  track_filename = "#{track_name}.mp3"
-  track_filepath = "#{DEST}/#{track_filename}"
+  track_filepath = "#{DEST}/#{track_filename(artist, title, suffix_num)}"
+
+  while tracks_hash[track_filepath]
+    suffix_num = suffix_num ? suffix_num + 1 : 1
+    track_filepath = "#{DEST}/#{track_filename(artist, title, suffix_num)}"
+  end
+  tracks_hash[track_filepath] = true
 
 
   unless File.file?(track_filepath)
-    puts "Down #{track_name}"
+    puts "Down #{track_name(artist, title, suffix_num)} (#{track_filepath})"
 
     progressbar = ProgressBar.create(format: '%a <%B> %p%% %t')
 
