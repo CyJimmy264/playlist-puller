@@ -19,12 +19,6 @@ require "pry"
 
 DEST = "/home/mveynberg/Музыка/VK"
 
-playlist = nil
-File.open(Dir["/home/mveynberg/Музыка/Музыка\ Максима\ Вейнберга*"].sort.last) do |file|
-  playlist = Playlist::Format::M3U.parse(file)
-end
-
-vk_playlist = Playlist.new title: "VK"
 
 def sanitize(str)
   str.gsub(/[\%\/\-]/) { |c| '%%%02X' % c.ord }.truncate(100, separator: /\s/)
@@ -44,7 +38,24 @@ def track_filename(artist, title, suffix_num)
   "#{track_name(artist, title, suffix_num)}.mp3"
 end
 
+playlist = nil
+File.open(Dir["/home/mveynberg/Музыка/музыка\ Максима\ Вейнберга*"].sort.last) do |file|
+  playlist = Playlist::Format::M3U.parse(file)
+end
+
+playlist_old = nil
+File.open("#{DEST}/VK.m3u.bak") do |file|
+  playlist_old = Playlist::Format::M3U.parse(file)
+end
+durations = playlist_old.tracks.map { |track| [track.location, track.duration < 0 ? 0 : track.duration] }.to_h
+
+playlist_new = Playlist.new(:title => "My awesome playlist")
+
+
+counter = 0
+
 playlist.tracks.each do |track|
+  counter += 1
   title = sanitize track.title
   artist = sanitize track.contributor_names
   suffix_num = nil
@@ -57,19 +68,51 @@ playlist.tracks.each do |track|
   end
   tracks_hash[track_filepath] = true
 
-
   unless File.file?(track_filepath)
+    next if artist == "Dusty Kid"
+
     puts "Down #{track_name(artist, title, suffix_num)} (#{track_filepath})"
 
     progressbar = ProgressBar.create(format: '%a <%B> %p%% %t')
 
     begin
-    Down.download track.location,
-                  destination: track_filepath,
-                  content_length_proc: -> (content_length) { progressbar.total = content_length },
-                  progress_proc:       -> (progress)       { progressbar.progress = progress }
+      Down.download track.location,
+                    destination: track_filepath,
+                    content_length_proc: -> (content_length) { progressbar.total = content_length },
+                    progress_proc:       -> (progress)       { progressbar.progress = progress }
+
+      duration = `sox "#{track_filepath}" -n stat 2>&1 | grep Length`[/([\d\.]+)/].to_f * 1000
+      puts "#{artist} - #{title} | \t#{duration}"
+
+      playlist_new.add_track(
+        performer: track.contributor_names,
+        title: track.title,
+        location: track_filepath,
+        duration: duration,
+      )
     rescue
       puts "Failed"
     end
+  else
+    duration = if (durations[track_filepath] || 0) > 0
+                 durations[track_filepath]
+               else
+                 `sox "#{track_filepath}" -n stat 2>&1 | grep Length`[/([\d\.]+)/].to_f * 1000
+               end
+
+    puts "#{artist} - #{title} | \t#{duration}"
+
+    playlist_new.add_track(
+      performer: track.contributor_names,
+      title: track.title,
+      location: track_filepath,
+      duration: duration,
+    )
+    # FileUtils.ln_s track_filepath, "/home/mveynberg/Музыка/VKcj264"
   end
+
+end
+
+File.open("#{DEST}/VK.m3u", "w") do |file|
+  file.write Playlist::Format::M3U.generate(playlist_new)
 end
