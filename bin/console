@@ -31,13 +31,20 @@ def track_filename(artist, title, suffix_num)
   "#{track_name(artist, title, suffix_num)}.mp3"
 end
 
-playlist = nil
-File.open(Dir["/home/mveynberg/Музыка/playlist.xspf"].sort.last) do |file|
-  playlist = Playlist::Format::XSPF.parse(file)
+prepend_playlist = nil
+File.open(Dir["#{MUSIC}/prepend_playlist.xspf"].sort.last) do |file|
+  prepend_playlist = Playlist::Format::XSPF.parse(file)
 end
 
+append_playlist = nil
+File.open(Dir["#{MUSIC}/playlist.xspf"].sort.last) do |file|
+  append_playlist = Playlist::Format::XSPF.parse(file)
+end
+
+playlist = Playlist.new(:title => "My awesome playlist")
+
 playlist_old = nil
-File.open(Dir["/home/mveynberg/Музыка/VK.xspf"].sort.last) do |file|
+File.open(Dir["#{MUSIC}/VK.xspf"].sort.last) do |file|
   playlist_old = Playlist::Format::XSPF.parse(file)
 end
 durations = playlist_old.tracks.map { |track| [track.location, track.duration < 0 ? 0 : track.duration] }.to_h
@@ -46,7 +53,7 @@ playlist_new = Playlist.new(:title => "My awesome playlist")
 
 counter = 0
 
-playlist.tracks.each do |track|
+track_process = proc do |track|
   counter += 1
   title = sanitize track.title
   artist = sanitize track.contributor_names
@@ -112,6 +119,29 @@ playlist.tracks.each do |track|
       duration: duration,
     )
   end
+end
+
+prepend_playlist.tracks.each do |track|
+  already_include = append_playlist.tracks.select do |t|
+    t.contributor_names == track.contributor_names &&
+      t.title == track.title &&
+      t.duration == track.duration
+  end.count > 0
+
+  if !already_include
+    playlist.add_track track
+    puts "track #{track.contributor_names} #{track.title}"
+  end
+end
+
+append_playlist.tracks.each { |track| playlist.add_track track }
+
+File.open("#{MUSIC}/playlist.xspf", "w") do |file|
+  file.write Playlist::Format::XSPF.generate(playlist)
+end
+
+playlist.tracks.each do |track|
+  track_process.call track
 end
 
 File.open("#{MUSIC}/VK.xspf", "w") do |file|
