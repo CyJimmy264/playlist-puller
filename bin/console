@@ -147,3 +147,8 @@ end
 File.open("#{MUSIC}/VK.xspf", "w") do |file|
   file.write Playlist::Format::XSPF.generate(playlist_new)
 end
+
+playlist_new.tracks.reverse!
+File.open("#{MUSIC}/VK_reversed.xspf", "w") do |file|
+  file.write Playlist::Format::XSPF.generate(playlist_new)
+end
