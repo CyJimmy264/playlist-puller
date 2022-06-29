@@ -31,22 +31,32 @@ def track_filename(artist, title, suffix_num)
   "#{track_name(artist, title, suffix_num)}.mp3"
 end
 
-prepend_playlist = nil
-File.open(Dir["#{MUSIC}/prepend_playlist.xspf"].sort.last) do |file|
-  prepend_playlist = Playlist::Format::XSPF.parse(file)
+prepend_playlist = Playlist.new
+begin
+  File.open(Dir["#{MUSIC}/prepend_playlist.xspf"].sort.last) do |file|
+    prepend_playlist = Playlist::Format::XSPF.parse(file)
+  end
+rescue
 end
 
-append_playlist = nil
-File.open(Dir["#{MUSIC}/playlist.xspf"].sort.last) do |file|
-  append_playlist = Playlist::Format::XSPF.parse(file)
+append_playlist = Playlist.new
+begin
+  File.open(Dir["#{MUSIC}/playlist.xspf"].sort.last) do |file|
+    append_playlist = Playlist::Format::XSPF.parse(file)
+  end
+rescue
 end
 
 playlist = Playlist.new(:title => "My awesome playlist")
 
-playlist_old = nil
-File.open(Dir["#{MUSIC}/VK.xspf"].sort.last) do |file|
-  playlist_old = Playlist::Format::XSPF.parse(file)
+playlist_old = Playlist.new
+begin
+  File.open(Dir["#{MUSIC}/VK.xspf"].sort.last) do |file|
+    playlist_old = Playlist::Format::XSPF.parse(file)
+  end
+rescue
 end
+
 durations = playlist_old.tracks.map { |track| [track.location, track.duration < 0 ? 0 : track.duration] }.to_h
 
 playlist_new = Playlist.new(:title => "My awesome playlist")
